@@ -25,18 +25,22 @@ module.exports.data = new SlashCommandBuilder()
 
 module.exports.execute = async (interaction) => {
     const embed = new EmbedBuilder()
-        .setTitle('📋 Migration Requirements')
+        .setTitle('📋 KVK3 Migration Requirements')
         .setDescription(
-            '**9-digit ID:**\n' +
-            '• 1B+ KP, 5M+ deaths\n' +
-            '• 2 full marches (4 cmdrs)\n' +
-            '• 1 gold set, 1 expertise\n' +
-            '• VIP 14+\n\n' +
-            '**8-digit ID:**\n' +
-            '• 2.2B+ KP, 10M+ deaths\n' +
-            '• 3 full marches (6 cmdrs)\n' +
-            '• 2 gold sets, 2 expertises\n' +
-            '• VIP 15+\n\n' +
+            '• 200k+ KP, 800k+ deaths\n' +
+            '• 1 full march\n' +
+            '• VIP 12+\n\n' +
+            //"KVK 5\n" +
+            //'**9-digit ID:**\n' +
+            //'• 1B+ KP, 5M+ deaths\n' +
+            //'• 2 full marches (4 cmdrs)\n' +
+            //'• 1 gold set, 1 expertise\n' +
+            //'• VIP 14+\n\n' +
+            //'**8-digit ID:**\n' +
+            //'• 2.2B+ KP, 10M+ deaths\n' +
+            //'• 3 full marches (6 cmdrs)\n' +
+            //'• 2 gold sets, 2 expertises\n' +
+            //'• VIP 15+\n\n' +
             '❗ False or incomplete info = auto reject.'
         )
         .setColor(0x2ECC71);
