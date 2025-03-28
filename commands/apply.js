@@ -40,8 +40,22 @@ module.exports.execute = async (interaction) => {
 
 module.exports.handleInteraction = async (interaction) => {
     if (interaction.isButton() && interaction.customId === 'start_application') {
-        userApplications.set(interaction.user.id, { step: 0, answers: {}, channel: interaction.channel });
-        await interaction.followUp({ content: questions[0].question, ephemeral: true });
+        try {
+            userApplications.set(interaction.user.id, { step: 0, answers: {}, channel: interaction.channel });
+
+            if (!interaction.deferred && !interaction.replied) {
+                await interaction.reply({ content: questions[0].question, ephemeral: true });
+            } else {
+                await interaction.followUp({ content: questions[0].question, ephemeral: true });
+            }
+        } catch (err) {
+            console.error('❌ handleInteraction error:', err);
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({ content: '⚠️ Сталася помилка. Спробуйте ще раз. 1', ephemeral: true });
+            } else {
+                await interaction.followUp({ content: '⚠️ Сталася помилка. Спробуйте ще раз. 2', ephemeral: true });
+            }
+        }
     }
 };
 
