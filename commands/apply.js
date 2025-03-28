@@ -15,7 +15,7 @@ const logFilePath = path.join(__dirname, '../logs/applications.log');
 const questions = [
     { key: 'profileScreenshots', question: 'Please upload screenshots of your profile (including Player ID, KP, Dead Troops, and detailed view):' },
     { key: 'vipLevel', question: 'What is your VIP level?' },
-    { key: 'commanderScreenshots', question: ʼUpload screenshots of all combat ready commanders.ʼ },
+    { key: 'commanderScreenshots', question: 'Upload screenshots of all combat-ready commanders.' },
     { key: 'gearScreenshots', question: 'Please upload screenshots of your gold equipment sets and armaments (вооружения):' },
 ];
 module.exports.data = new SlashCommandBuilder()
