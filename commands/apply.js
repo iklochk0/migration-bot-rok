@@ -41,26 +41,29 @@ module.exports.execute = async (interaction) => {
 module.exports.handleInteraction = async (interaction) => {
     if (interaction.isButton() && interaction.customId === 'start_application') {
         try {
-            userApplications.set(interaction.user.id, { step: 0, answers: {}, channel: interaction.channel });
+            const dm = await interaction.user.createDM();
 
-            if (!interaction.deferred && !interaction.replied) {
-                await interaction.reply({ content: questions[0].question, ephemeral: true });
-            } else {
-                await interaction.followUp({ content: questions[0].question, ephemeral: true });
-            }
+            userApplications.set(interaction.user.id, { step: 0, answers: {}, channel: dm });
+
+            await dm.send("Let's begin your migration application. Please answer the following:");
+            await dm.send(questions[0].question);
+
+            await interaction.reply({
+                content: '📬 Check your DMs to complete the application.',
+                ephemeral: true
+            });
         } catch (err) {
-            console.error('❌ handleInteraction error:', err);
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '⚠️ An error occurred. Please try again.', ephemeral: true });
-            } else {
-                await interaction.followUp({ content: '⚠️ An error occurred. Please try again.', ephemeral: true });
-            }
+            console.error('❌ Could not send DM:', err);
+            await interaction.reply({
+                content: '❌ I can’t message you. Please enable Direct Messages in your privacy settings and try again.',
+                ephemeral: true
+            });
         }
     }
 };
 
 module.exports.handleMessage = async (message) => {
-    if (message.author.bot) return;
+    if (message.author.bot || message.channel.type !== 1) return; // DM only
 
     const application = userApplications.get(message.author.id);
     if (!application) return;
@@ -69,11 +72,8 @@ module.exports.handleMessage = async (message) => {
     application.answers[currentQuestion.key] = message.content;
     application.step++;
 
-    await message.delete().catch(() => {});
-
     if (application.step < questions.length) {
-        const followUp = await message.channel.send(`<@${message.author.id}> ${questions[application.step].question}`);
-        setTimeout(() => followUp.delete().catch(() => {}), 15000);
+        await message.channel.send(questions[application.step].question);
     } else {
         const adminChannel = message.client.channels.cache.get(process.env.ADMIN_CHANNEL_ID);
 
@@ -88,7 +88,7 @@ module.exports.handleMessage = async (message) => {
         });
 
         await adminChannel.send({ embeds: [embed] });
-        await message.channel.send('✅ Your application has been successfully submitted!').then(m => setTimeout(() => m.delete().catch(() => {}), 15000));
+        await message.channel.send('✅ Your application has been successfully submitted!');
         userApplications.delete(message.author.id);
     }
 };
