@@ -13,11 +13,12 @@ const adminChannelId = process.env.ADMIN_CHANNEL_ID;
 const logFilePath = path.join(__dirname, '../logs/applications.log');
 
 const questions = [
-    { key: 'profileScreenshots', question: 'Please upload screenshots of your profile (including Player ID, KP, Dead Troops, and detailed view):' },
-    { key: 'vipLevel', question: 'What is your VIP level?' },
-    { key: 'commanderScreenshots', question: 'Upload screenshots of all combat-ready commanders.' },
-    { key: 'gearScreenshots', question: 'Please upload screenshots of your gold equipment sets and armaments (вооружения):' },
+    { key: 'accountScreenshot', question: 'Upload a screenshot of your account (showing Player ID and Kill Points):' },
+    { key: 'vipScreenshot', question: 'Upload a screenshot of your VIP level:' },
+    { key: 'marchesCommandersScreenshot', question: 'Upload a screenshot showing your full marches and combat-ready commanders (with proper skills):' },
+    { key: 'equipmentScreenshot', question: 'Upload screenshots of your full gold equipment sets and armaments:' },
 ];
+
 module.exports.data = new SlashCommandBuilder()
     .setName('apply')
     .setDescription('Submit migration application');
@@ -26,24 +27,15 @@ module.exports.execute = async (interaction) => {
     const embed = new EmbedBuilder()
         .setTitle('📋 Migration Requirements')
         .setDescription(
-            '**9-digit ID:**
-' +
-            '• 1B+ KP, 5M+ deaths
-' +
-            '• 2 full marches (4 cmdrs)
-' +
-            '• 1 gold set, 1 expertise
-' +
-            '• VIP 14+
-\n\n' +
-            '**8-digit ID:**
-' +
-            '• 2.2B+ KP, 10M+ deaths
-' +
-            '• 3 full marches (6 cmdrs)
-' +
-            '• 2 gold sets, 2 expertises
-' +
+            '**9-digit ID:**\n' +
+            '• 1B+ KP, 5M+ deaths\n' +
+            '• 2 full marches (4 cmdrs)\n' +
+            '• 1 gold set, 1 expertise\n' +
+            '• VIP 14+\n\n' +
+            '**8-digit ID:**\n' +
+            '• 2.2B+ KP, 10M+ deaths\n' +
+            '• 3 full marches (6 cmdrs)\n' +
+            '• 2 gold sets, 2 expertises\n' +
             '• VIP 15+\n\n' +
             '❗ False or incomplete info = auto reject.'
         )
@@ -57,7 +49,7 @@ module.exports.execute = async (interaction) => {
     const row = new ActionRowBuilder().addComponents(button);
 
     await interaction.reply({
-        content: 'Click the button to start your migration application:',
+        content: 'Натисніть кнопку, щоб почати подачу заявки:',
         embeds: [embed],
         components: [row],
         ephemeral: true
@@ -73,8 +65,7 @@ module.exports.handleInteraction = async (interaction) => {
     userStates.set(userId, { step: 0, answers: {} });
 
     const message = await dm.send(
-        "Let's begin your migration application. Please answer the following questions.\n" +
-        '*This conversation will auto-delete in 5 minutes per step to keep things clean.*\n' +
+        "Let's begin your migration application. Please answer the following questions.\n*This conversation will auto-delete in 5 minutes per step to keep things clean.*\n" +
         questions[0].question
     );
 
@@ -94,10 +85,9 @@ module.exports.handleMessage = async (message) => {
     const key = questions[step].key;
 
     if (message.attachments.size === 0) {
-        await message.reply('Please upload at least one screenshot.');
+        await message.reply('Please upload a screenshot.');
         return;
     }
-
     state.answers[key] = message.attachments.map(a => a.url);
 
     const prevMsg = message;
