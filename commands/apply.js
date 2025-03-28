@@ -3,8 +3,7 @@ const {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
-    EmbedBuilder,
-    AttachmentBuilder
+    EmbedBuilder
 } = require('discord.js');
 
 const userApplications = new Map();
@@ -43,10 +42,17 @@ module.exports.handleInteraction = async (interaction) => {
         try {
             const dm = await interaction.user.createDM();
 
-            userApplications.set(interaction.user.id, { step: 0, answers: {}, channel: dm });
+            userApplications.set(interaction.user.id, {
+                step: 0,
+                answers: {},
+                channelId: dm.id
+            });
 
-            await dm.send("Let's begin your migration application. Please answer the following:");
-            await dm.send(questions[0].question);
+            const introMessage = await dm.send("Let's begin your migration application. Please answer the following questions.\n_This conversation will auto-delete in 5 minutes per step to keep things clean._");
+            setTimeout(() => introMessage.delete().catch(() => {}), 300000);
+
+            const questionMsg = await dm.send(questions[0].question);
+            setTimeout(() => questionMsg.delete().catch(() => {}), 300000);
 
             await interaction.reply({
                 content: '📬 Check your DMs to complete the application.',
@@ -63,32 +69,46 @@ module.exports.handleInteraction = async (interaction) => {
 };
 
 module.exports.handleMessage = async (message) => {
-    if (message.author.bot || message.channel.type !== 1) return; // DM only
+    try {
+        if (message.author.bot || message.channel.type !== 1) return; // DM only
 
-    const application = userApplications.get(message.author.id);
-    if (!application) return;
+        const application = userApplications.get(message.author.id);
+        if (!application) return;
 
-    const currentQuestion = questions[application.step];
-    application.answers[currentQuestion.key] = message.content;
-    application.step++;
+        const currentQuestion = questions[application.step];
+        application.answers[currentQuestion.key] = message.content;
+        application.step++;
 
-    if (application.step < questions.length) {
-        await message.channel.send(questions[application.step].question);
-    } else {
-        const adminChannel = message.client.channels.cache.get(process.env.ADMIN_CHANNEL_ID);
+        setTimeout(() => message.delete().catch(() => {}), 300000);
 
-        const embed = new EmbedBuilder()
-            .setTitle('📋 New Migration Application')
-            .setColor(0x2ECC71)
-            .setTimestamp()
-            .setFooter({ text: message.author.tag, iconURL: message.author.displayAvatarURL() });
+        if (application.step < questions.length) {
+            const next = await message.channel.send(questions[application.step].question);
+            setTimeout(() => next.delete().catch(() => {}), 300000);
+        } else {
+            const adminChannel = message.client.channels.cache.get(process.env.ADMIN_CHANNEL_ID);
+            if (!adminChannel) {
+                console.error('❌ Admin channel not found. Check ADMIN_CHANNEL_ID');
+                await message.channel.send('❌ Internal error: Admin channel not found. Please contact staff.');
+                userApplications.delete(message.author.id);
+                return;
+            }
 
-        questions.forEach(q => {
-            embed.addFields({ name: q.question, value: application.answers[q.key] || 'N/A' });
-        });
+            const embed = new EmbedBuilder()
+                .setTitle('📋 New Migration Application')
+                .setColor(0x2ECC71)
+                .setTimestamp()
+                .setFooter({ text: message.author.tag, iconURL: message.author.displayAvatarURL() });
 
-        await adminChannel.send({ embeds: [embed] });
-        await message.channel.send('✅ Your application has been successfully submitted!');
-        userApplications.delete(message.author.id);
+            questions.forEach(q => {
+                embed.addFields({ name: q.question, value: application.answers[q.key] || 'N/A' });
+            });
+
+            await adminChannel.send({ embeds: [embed] });
+
+            const confirm = await message.channel.send('✅ Your application has been successfully submitted. This message will remain.');
+            userApplications.delete(message.author.id);
+        }
+    } catch (err) {
+        console.error('❌ Error handling message:', err);
     }
 };
