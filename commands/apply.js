@@ -13,10 +13,10 @@ const questions = [
     { key: 'playerId', question: 'Your Player ID:' },
     { key: 'kp', question: 'Your Kill Points (KP):' },
     { key: 'deads', question: 'Your Dead Troops:' },
-    { key: 'marches', question: 'Your Marches:' },
-    { key: 'equipment', question: 'Your Gold Equipment Sets:' },
+    { key: 'marches', question: 'Number of Full Marches:' },
+    { key: 'equipment', question: 'Number of Gold Equipment Sets:' },
     { key: 'vip', question: 'Your VIP Level:' },
-    { key: 'commanders', question: 'Number of commanders with full or playable expertise (e.g., 5515 Jeanne Prime, 5551 Hermann Prime):}
+    { key: 'commanders', question: 'Number of commanders with full or playable expertise (e.g., 5515 Jeanne Prime, 5551 Hermann Prime):' }
 ];
 
 module.exports.data = new SlashCommandBuilder()
@@ -32,7 +32,7 @@ module.exports.execute = async (interaction) => {
     const row = new ActionRowBuilder().addComponents(applyButton);
 
     await interaction.reply({
-        content: 'Натисніть кнопку, щоб почати подачу заявки:',
+        content: 'Click the button to start your migration application:',
         components: [row],
         ephemeral: true
     });
@@ -51,9 +51,9 @@ module.exports.handleInteraction = async (interaction) => {
         } catch (err) {
             console.error('❌ handleInteraction error:', err);
             if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '⚠️ Сталася помилка. Спробуйте ще раз. 1', ephemeral: true });
+                await interaction.reply({ content: '⚠️ An error occurred. Please try again.', ephemeral: true });
             } else {
-                await interaction.followUp({ content: '⚠️ Сталася помилка. Спробуйте ще раз. 2', ephemeral: true });
+                await interaction.followUp({ content: '⚠️ An error occurred. Please try again.', ephemeral: true });
             }
         }
     }
@@ -67,16 +67,18 @@ module.exports.handleMessage = async (message) => {
 
     const currentQuestion = questions[application.step];
     application.answers[currentQuestion.key] = message.content;
-    await message.delete().catch(() => {});
     application.step++;
 
+    await message.delete().catch(() => {});
+
     if (application.step < questions.length) {
-        await message.channel.send(`<@${message.author.id}> ${questions[application.step].question}`);
+        const followUp = await message.channel.send(`<@${message.author.id}> ${questions[application.step].question}`);
+        setTimeout(() => followUp.delete().catch(() => {}), 15000);
     } else {
         const adminChannel = message.client.channels.cache.get(process.env.ADMIN_CHANNEL_ID);
 
         const embed = new EmbedBuilder()
-            .setTitle('📋 Нова заявка на міграцію')
+            .setTitle('📋 New Migration Application')
             .setColor(0x2ECC71)
             .setTimestamp()
             .setFooter({ text: message.author.tag, iconURL: message.author.displayAvatarURL() });
@@ -86,7 +88,7 @@ module.exports.handleMessage = async (message) => {
         });
 
         await adminChannel.send({ embeds: [embed] });
-        await message.channel.send('✅ Ваша заявка успішно відправлена!');
+        await message.channel.send('✅ Your application has been successfully submitted!').then(m => setTimeout(() => m.delete().catch(() => {}), 15000));
         userApplications.delete(message.author.id);
     }
 };
