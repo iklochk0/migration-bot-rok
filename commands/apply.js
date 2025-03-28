@@ -1,126 +1,139 @@
-const {
-    SlashCommandBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    EmbedBuilder
+const { 
+    SlashCommandBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    EmbedBuilder, 
+    AttachmentBuilder 
 } = require('discord.js');
-const fs = require('node:fs');
-const path = require('node:path');
+const fs = require('fs');
+const path = require('path');
 
-const userApplications = new Map();
+const userStates = new Map();
+const adminChannelId = process.env.ADMIN_CHANNEL_ID;
+const logFilePath = path.join(__dirname, '../logs/applications.log');
 
 const questions = [
     { key: 'playerId', question: 'Your Player ID:' },
-    { key: 'kp', question: 'Your Kill Points (KP):' },
-    { key: 'deads', question: 'Your Dead Troops:' },
-    { key: 'marches', question: 'Number of Full Marches:' },
-    { key: 'equipment', question: 'Number of Gold Equipment Sets:' },
-    { key: 'vip', question: 'Your VIP Level:' },
-    { key: 'commanders', question: 'Number of commanders with full or playable expertise (e.g., 5515 Jeanne Prime, 5551 Hermann Prime):' }
+    { key: 'killPoints', question: 'Your Kill Points (e.g., 1.2B):' },
+    { key: 'deadTroops', question: 'Your Dead Troops (e.g., 10M):' },
+    { key: 'vipLevel', question: 'Your VIP level:' },
+    { key: 'fullMarches', question: 'Number of full marches (each with 2 commanders):' },
+    { key: 'equipmentSets', question: 'Number of full gold equipment sets:' },
+    { key: 'expertiseCommanders', question: 'Number of commanders with full or playable expertise (e.g., 5515 Jeanne Prime, 5551 Hermann Prime):' },
+    { key: 'screenshots', question: 'Please upload screenshots of your profile and commanders:' },
 ];
-
-const logPath = path.join(__dirname, '../logs');
-if (!fs.existsSync(logPath)) fs.mkdirSync(logPath);
-
-function logApplication(username, answers) {
-    const logEntry = `User: ${username}\n` + questions.map(q => `${q.key}: ${answers[q.key]}`).join('\n') + `\nTime: ${new Date().toISOString()}\n\n`;
-    const logFile = path.join(logPath, 'applications.log');
-    fs.appendFileSync(logFile, logEntry);
-}
 
 module.exports.data = new SlashCommandBuilder()
     .setName('apply')
     .setDescription('Submit migration application');
 
 module.exports.execute = async (interaction) => {
-    const applyButton = new ButtonBuilder()
-        .setCustomId('start_application')
+    const embed = new EmbedBuilder()
+        .setTitle('📋 Migration Requirements')
+        .setDescription(
+            '**9-digit ID:**\n' +
+            '• 1B+ KP, 5M+ deaths\n' +
+            '• 2 full marches (4 cmdrs)\n' +
+            '• 1 gold set, 1 expertise\n' +
+            '• VIP 14+\n\n' +
+            '**8-digit ID:**\n' +
+            '• 2.2B+ KP, 10M+ deaths\n' +
+            '• 3 full marches (6 cmdrs)\n' +
+            '• 2 gold sets, 2 expertises\n' +
+            '• VIP 15+\n\n' +
+            '❗ False or incomplete info = auto reject.'
+        )
+        .setColor(0x2ECC71);
+
+    const button = new ButtonBuilder()
+        .setCustomId('apply_start')
         .setLabel('📥 Apply')
         .setStyle(ButtonStyle.Primary);
 
-    const row = new ActionRowBuilder().addComponents(applyButton);
+    const row = new ActionRowBuilder().addComponents(button);
 
     await interaction.reply({
-        content: 'Click the button to start your migration application:',
+        content: 'Натисніть кнопку, щоб почати подачу заявки:',
+        embeds: [embed],
         components: [row],
         ephemeral: true
     });
 };
 
 module.exports.handleInteraction = async (interaction) => {
-    if (interaction.isButton() && interaction.customId === 'start_application') {
-        try {
-            const dm = await interaction.user.createDM();
+    if (!interaction.isButton() || interaction.customId !== 'apply_start') return;
 
-            userApplications.set(interaction.user.id, {
-                step: 0,
-                answers: {},
-                channelId: dm.id
-            });
+    const userId = interaction.user.id;
+    const dm = await interaction.user.createDM();
 
-            const introMessage = await dm.send("Let's begin your migration application. Please answer the following questions.\n_This conversation will auto-delete in 5 minutes per step to keep things clean._");
-            setTimeout(() => introMessage.delete().catch(() => {}), 300000);
+    userStates.set(userId, { step: 0, answers: {} });
 
-            const questionMsg = await dm.send(questions[0].question);
-            setTimeout(() => questionMsg.delete().catch(() => {}), 300000);
+    const message = await dm.send(
+        "Let's begin your migration application. Please answer the following questions.\n*This conversation will auto-delete in 5 minutes per step to keep things clean.*\n" +
+        questions[0].question
+    );
 
-            await interaction.reply({
-                content: '📬 Check your DMs to complete the application.',
-                ephemeral: true
-            });
-        } catch (err) {
-            console.error('❌ Could not send DM:', err);
-            await interaction.reply({
-                content: '❌ I can’t message you. Please enable Direct Messages in your privacy settings and try again.',
-                ephemeral: true
-            });
-        }
-    }
+    setTimeout(() => {
+        if (message.deletable) message.delete().catch(() => {});
+    }, 5 * 60 * 1000);
 };
 
 module.exports.handleMessage = async (message) => {
-    try {
-        if (message.author.bot || message.channel.type !== 1) return; // DM only
+    if (message.author.bot) return;
+    const userId = message.author.id;
+    const state = userStates.get(userId);
 
-        const application = userApplications.get(message.author.id);
-        if (!application) return;
+    if (!state) return;
 
-        const currentQuestion = questions[application.step];
-        application.answers[currentQuestion.key] = message.content.trim();
-        application.step++;
+    const step = state.step;
+    const key = questions[step].key;
 
-        setTimeout(() => message.delete().catch(() => {}), 300000);
-
-        if (application.step < questions.length) {
-            const next = await message.channel.send(questions[application.step].question);
-            setTimeout(() => next.delete().catch(() => {}), 300000);
-        } else {
-            const adminChannel = message.client.channels.cache.get(process.env.ADMIN_CHANNEL_ID);
-            if (!adminChannel) {
-                console.error('❌ Admin channel not found. Check ADMIN_CHANNEL_ID');
-                await message.channel.send('❌ Internal error: Admin channel not found. Please contact staff.');
-                userApplications.delete(message.author.id);
-                return;
-            }
-
-            const embed = new EmbedBuilder()
-                .setTitle('📋 New Migration Application')
-                .setColor(0x2ECC71)
-                .setTimestamp()
-                .setFooter({ text: message.author.tag, iconURL: message.author.displayAvatarURL() });
-
-            questions.forEach(q => {
-                embed.addFields({ name: q.question, value: application.answers[q.key] || 'N/A' });
-            });
-
-            await adminChannel.send({ embeds: [embed] });
-            logApplication(message.author.tag, application.answers);
-
-            await message.channel.send('✅ Your application has been successfully submitted. This message will remain.');
-            userApplications.delete(message.author.id);
+    if (key === 'screenshots') {
+        if (message.attachments.size === 0) {
+            await message.reply('Please upload at least one screenshot.');
+            return;
         }
-    } catch (err) {
-        console.error('❌ Error handling message:', err);
+        state.answers[key] = message.attachments.map(a => a.url);
+    } else {
+        state.answers[key] = message.content;
+    }
+
+    const prevMsg = message;
+    setTimeout(() => {
+        if (prevMsg.deletable) prevMsg.delete().catch(() => {});
+    }, 5 * 60 * 1000);
+
+    state.step++;
+
+    if (state.step < questions.length) {
+        const nextQuestion = questions[state.step].question;
+        const msg = await message.author.send(nextQuestion);
+        setTimeout(() => {
+            if (msg.deletable) msg.delete().catch(() => {});
+        }, 5 * 60 * 1000);
+    } else {
+        userStates.delete(userId);
+
+        const fields = Object.entries(state.answers).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n');
+        const embed = new EmbedBuilder()
+            .setTitle('📝 New Migration Application')
+            .setDescription(fields)
+            .setColor(0x3498DB)
+            .setFooter({ text: `User ID: ${userId}` });
+
+        if (adminChannelId) {
+            const adminChannel = await message.client.channels.fetch(adminChannelId).catch(() => null);
+            if (adminChannel && adminChannel.isTextBased()) {
+                await adminChannel.send({ embeds: [embed] });
+            }
+        }
+
+        const logLine = `[${new Date().toISOString()}] ${message.author.tag} (${userId}):\n${fields}\n\n`;
+        fs.appendFile(logFilePath, logLine, err => {
+            if (err) console.error('Failed to write log:', err);
+        });
+
+        await message.author.send('✅ Your application has been submitted. Thank you!');
     }
 };
