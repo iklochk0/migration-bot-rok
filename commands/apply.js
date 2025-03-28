@@ -10,13 +10,13 @@ const {
 const userApplications = new Map();
 
 const questions = [
-    { key: 'playerId', question: 'Ваш Player ID:' },
-    { key: 'kp', question: 'Ваші Kill Points (KP):' },
-    { key: 'deads', question: 'Кількість ваших Dead Troops:' },
-    { key: 'marches', question: 'Кількість Full Marches:' },
-    { key: 'equipment', question: 'Кількість Gold Equipment Sets:' },
-    { key: 'vip', question: 'Ваш VIP Level:' },
-    { key: 'commanders', question: 'Кількість командирів з повною або іграбельною експертизою (наприклад: 5515 Жанна Прайм, 5551 Герман Прайм):' }
+    { key: 'playerId', question: 'Your Player ID:' },
+    { key: 'kp', question: 'Your Kill Points (KP):' },
+    { key: 'deads', question: 'Your Dead Troops:' },
+    { key: 'marches', question: 'Your Marches:' },
+    { key: 'equipment', question: 'Your Gold Equipment Sets:' },
+    { key: 'vip', question: 'Your VIP Level:' },
+    { key: 'commanders', question: 'Number of commanders with full or playable expertise (e.g., 5515 Jeanne Prime, 5551 Hermann Prime):}
 ];
 
 module.exports.data = new SlashCommandBuilder()
@@ -67,6 +67,7 @@ module.exports.handleMessage = async (message) => {
 
     const currentQuestion = questions[application.step];
     application.answers[currentQuestion.key] = message.content;
+    await message.delete().catch(() => {});
     application.step++;
 
     if (application.step < questions.length) {
