@@ -1,17 +1,22 @@
-const { 
-    SlashCommandBuilder, 
-    ActionRowBuilder, 
-    ButtonBuilder, 
-    ButtonStyle, 
-    ModalBuilder, 
-    TextInputBuilder, 
-    TextInputStyle, 
-    EmbedBuilder 
+const {
+    SlashCommandBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    EmbedBuilder,
+    AttachmentBuilder
 } = require('discord.js');
 
-module.exports.data = new SlashCommandBuilder()
-    .setName('apply')
-    .setDescription('Submit migration application');
+const questions = [
+    { key: 'playerId', question: 'Ваш Player ID:' },
+    { key: 'kp', question: 'Ваші Kill Points (KP):' },
+    { key: 'deads', question: 'Кількість ваших Dead Troops:' },
+    { key: 'marches', question: 'Кількість Full Marches:' },
+    { key: 'equipment', question: 'Кількість Gold Equipment Sets:' },
+    { key: 'vip', question: 'Ваш VIP Level:' },
+    { key: 'commanders', question: 'Кількість командирів з повною або іграбельною експертизою (наприклад: 5515 Жанна Прайм, 5551 Герман Прайм):' },
+    { key: 'screenshots', question: 'Прикріпіть скріншоти профіля та командирів (до 5 файлів):', isAttachment: true }
+];
 
 module.exports.execute = async (interaction) => {
     const requirementsEmbed = new EmbedBuilder()
@@ -31,62 +36,80 @@ module.exports.execute = async (interaction) => {
         )
         .setColor(0x2ECC71);
 
-    const openFormButton = new ButtonBuilder()
-        .setCustomId('apply_openForm')
+module.exports.data = new SlashCommandBuilder()
+    .setName('apply')
+    .setDescription('Submit migration application');
+
+module.exports.execute = async (interaction) => {
+    const applyButton = new ButtonBuilder()
+        .setCustomId('start_application')
         .setLabel('📥 Apply')
         .setStyle(ButtonStyle.Primary);
 
-    const row = new ActionRowBuilder().addComponents(openFormButton);
+    const row = new ActionRowBuilder().addComponents(applyButton);
 
     await interaction.reply({
-        content: 'Click the button below to start your migration application:',
-        embeds: [requirementsEmbed],
+        content: 'Натисніть кнопку, щоб почати подачу заявки:',
         components: [row],
         ephemeral: true
     });
 };
 
+const userApplications = {};
+
 module.exports.handleInteraction = async (interaction) => {
-    if (interaction.isButton() && interaction.customId === 'apply_openForm') {
-        const modal = new ModalBuilder()
-            .setCustomId('apply_formModal')
-            .setTitle('Migration Application');
-
-        const playerIdInput = new TextInputBuilder()
-            .setCustomId('playerId')
-            .setLabel('Your Player ID')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('e.g., 123456789')
-            .setRequired(true);
-            
-        const kpInput = new TextInputBuilder()
-            .setCustomId('kp')
-            .setLabel('Your Kill Points (KP)')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('e.g., 1B')
-            .setRequired(true);
-            
-        const playerDeadsInput = new TextInputBuilder()
-            .setCustomId('playerDeads')
-            .setLabel('Your Dead Troops')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('e.g., 10m')
-            .setRequired(true);
-
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(playerIdInput),
-            new ActionRowBuilder().addComponents(kpInput),
-            new ActionRowBuilder().addComponents(playerDeadsInput)
-        );
-
-        await interaction.showModal(modal);
+    if (interaction.isButton() && interaction.customId === 'start_application') {
+        userApplications[interaction.user.id] = { step: 0, answers: {} };
+        await interaction.reply({ content: questions[0].question, ephemeral: true });
     }
-    else if (interaction.isModalSubmit() && interaction.customId === 'apply_formModal') {
-        const playerId = interaction.fields.getTextInputValue('playerId');
-        const kp = interaction.fields.getTextInputValue('kp');
-        const kp = interaction.fields.getTextInputValue('playerDeadsInput');
 
-        // Тут можна додати додаткову логіку (наприклад, пересилання заявки в адмін-канал)
-        await interaction.reply({ content: '✅ Your application has been submitted!', ephemeral: true });
+    if (interaction.isMessageComponent()) return;
+
+    if (interaction.channel.type === 1 || interaction.channel.type === 0) {
+        const application = userApplications[interaction.author?.id];
+        if (!application) return;
+
+        const currentQuestion = questions[application.step];
+
+        if (currentQuestion.isAttachment) {
+            if (interaction.attachments.size === 0) {
+                interaction.reply({ content: 'Будь ласка, прикріпіть зображення (до 5 файлів).', ephemeral: true });
+                return;
+            }
+            application.answers[currentQuestion.key] = interaction.attachments.map(a => a.url);
+        } else {
+            application.answers[currentQuestion.key] = interaction.content;
+        }
+
+        application.step++;
+
+        if (application.step < questions.length) {
+            interaction.reply({ content: questions[application.step].question, ephemeral: true });
+        } else {
+            const adminChannel = interaction.client.channels.cache.get(process.env.ADMIN_CHANNEL_ID);
+
+            const embed = new EmbedBuilder()
+                .setTitle('📋 Нова заявка на міграцію')
+                .setColor(0x2ECC71)
+                .setTimestamp()
+                .setFooter({ text: interaction.author.tag, iconURL: interaction.author.displayAvatarURL() });
+
+            questions.forEach(q => {
+                if (q.key !== 'screenshots') {
+                    embed.addFields({ name: q.question, value: application.answers[q.key] });
+                }
+            });
+
+            await adminChannel.send({ embeds: [embed] });
+
+            if (application.answers.screenshots) {
+                for (const screenshot of application.answers.screenshots) {
+                    await adminChannel.send({ files: [new AttachmentBuilder(screenshot)] });
+                }
+            }
+
+            interaction.reply({ content: '✅ Ваша заявка успішно відправлена!', ephemeral: true });
+            delete userApplications[interaction.author.id];
+        }
     }
 };
