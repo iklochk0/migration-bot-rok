@@ -1,9 +1,9 @@
-const {
-    SlashCommandBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    EmbedBuilder
+const { 
+    SlashCommandBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    EmbedBuilder 
 } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -13,16 +13,11 @@ const adminChannelId = process.env.ADMIN_CHANNEL_ID;
 const logFilePath = path.join(__dirname, '../logs/applications.log');
 
 const questions = [
-    { key: 'playerId', question: 'Your Player ID:' },
-    { key: 'killPoints', question: 'Your Kill Points (e.g., 1.2B):' },
-    { key: 'deadTroops', question: 'Your Dead Troops (e.g., 10M):' },
-    { key: 'vipLevel', question: 'Your VIP level:' },
-    { key: 'fullMarches', question: 'Number of full marches (each with 2 commanders):' },
-    { key: 'equipmentSets', question: 'Number of full gold equipment sets:' },
-    { key: 'expertiseCommanders', question: 'Number of commanders with full or playable expertise (e.g., 5515 Jeanne Prime, 5551 Hermann Prime):' },
-    { key: 'screenshots', question: 'Please upload screenshots of your profile and commanders:' },
+    { key: 'profileScreenshots', question: 'Please upload screenshots of your profile (including Player ID, KP, Dead Troops, and detailed view):' },
+    { key: 'vipLevel', question: 'What is your VIP level?' },
+    { key: 'commanderScreenshots', question: ʼUpload screenshots of all combat ready commanders.ʼ },
+    { key: 'gearScreenshots', question: 'Please upload screenshots of your gold equipment sets and armaments (вооружения):' },
 ];
-
 module.exports.data = new SlashCommandBuilder()
     .setName('apply')
     .setDescription('Submit migration application');
@@ -31,15 +26,24 @@ module.exports.execute = async (interaction) => {
     const embed = new EmbedBuilder()
         .setTitle('📋 Migration Requirements')
         .setDescription(
-            '**9-digit ID:**\n' +
-            '• 1B+ KP, 5M+ deaths\n' +
-            '• 2 full marches (4 cmdrs)\n' +
-            '• 1 gold set, 1 expertise\n' +
-            '• VIP 14+\n\n' +
-            '**8-digit ID:**\n' +
-            '• 2.2B+ KP, 10M+ deaths\n' +
-            '• 3 full marches (6 cmdrs)\n' +
-            '• 2 gold sets, 2 expertises\n' +
+            '**9-digit ID:**
+' +
+            '• 1B+ KP, 5M+ deaths
+' +
+            '• 2 full marches (4 cmdrs)
+' +
+            '• 1 gold set, 1 expertise
+' +
+            '• VIP 14+
+\n\n' +
+            '**8-digit ID:**
+' +
+            '• 2.2B+ KP, 10M+ deaths
+' +
+            '• 3 full marches (6 cmdrs)
+' +
+            '• 2 gold sets, 2 expertises
+' +
             '• VIP 15+\n\n' +
             '❗ False or incomplete info = auto reject.'
         )
@@ -53,7 +57,7 @@ module.exports.execute = async (interaction) => {
     const row = new ActionRowBuilder().addComponents(button);
 
     await interaction.reply({
-        content: 'Натисніть кнопку, щоб почати подачу заявки:',
+        content: 'Click the button to start your migration application:',
         embeds: [embed],
         components: [row],
         ephemeral: true
@@ -69,7 +73,8 @@ module.exports.handleInteraction = async (interaction) => {
     userStates.set(userId, { step: 0, answers: {} });
 
     const message = await dm.send(
-        "Let's begin your migration application. Please answer the following questions.\n*This conversation will auto-delete in 5 minutes per step to keep things clean.*\n" +
+        "Let's begin your migration application. Please answer the following questions.\n" +
+        '*This conversation will auto-delete in 5 minutes per step to keep things clean.*\n' +
         questions[0].question
     );
 
@@ -88,15 +93,12 @@ module.exports.handleMessage = async (message) => {
     const step = state.step;
     const key = questions[step].key;
 
-    if (key === 'screenshots') {
-        if (message.attachments.size === 0) {
-            await message.reply('Please upload at least one screenshot.');
-            return;
-        }
-        state.answers[key] = message.attachments.map(a => a.url);
-    } else {
-        state.answers[key] = message.content;
+    if (message.attachments.size === 0) {
+        await message.reply('Please upload at least one screenshot.');
+        return;
     }
+
+    state.answers[key] = message.attachments.map(a => a.url);
 
     const prevMsg = message;
     setTimeout(() => {
