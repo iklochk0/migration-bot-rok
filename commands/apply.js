@@ -4,6 +4,7 @@ const {
     ButtonBuilder, 
     ButtonStyle, 
     EmbedBuilder, 
+    AttachmentBuilder 
 } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -29,7 +30,7 @@ module.exports.data = new SlashCommandBuilder()
 
 module.exports.execute = async (interaction) => {
     const embed = new EmbedBuilder()
-        .setTitle('Migration Requirements')
+        .setTitle('📋 Migration Requirements')
         .setDescription(
             '**9-digit ID:**\n' +
             '• 1B+ KP, 5M+ deaths\n' +
@@ -53,10 +54,10 @@ module.exports.execute = async (interaction) => {
     const row = new ActionRowBuilder().addComponents(button);
 
     await interaction.reply({
-        content: 'Натисніть кнопку, щоб почати подачу заявки:',
+        content: 'Please click the button to begin your application. Make sure your DMs are open!',
         embeds: [embed],
         components: [row],
-        ephemeral: true,
+        ephemeral: true
     });
 };
 
@@ -64,39 +65,37 @@ module.exports.handleInteraction = async (interaction) => {
     if (!interaction.isButton() || interaction.customId !== 'apply_start') return;
 
     const userId = interaction.user.id;
-    const dm = await interaction.user.createDM();
+    const dm = await interaction.user.createDM().catch(() => null);
+
+    if (!dm) {
+        await interaction.reply({ content: '❌ Could not send DM. Please make sure your private messages are open.', ephemeral: true });
+        return;
+    }
 
     userStates.set(userId, { step: 0, answers: {} });
 
-    await sendQuestion(dm, userId);
-};
-
-async function sendQuestion(dm, userId) {
-    const state = userStates.get(userId);
-    if (!state) return;
-
-    const step = state.step;
-    const questionText = step === 0
-        ? "Let's begin your migration application. Please answer the following questions.\n*This conversation will auto-delete in 5 minutes per step to keep things clean.*\n" + questions[step].question
-        : questions[step].question;
-
-    const msg = await dm.send(questionText);
-    state.lastMessage = msg;
+    const message = await dm.send(
+        "Let's begin your migration application. Please answer the following questions.\n*This conversation will auto-delete in 5 minutes per step to keep things clean.*\n" +
+        questions[0].question
+    );
 
     setTimeout(() => {
-        if (msg.deletable) msg.delete().catch(() => {});
+        if (message.deletable) message.delete().catch(() => {});
     }, 5 * 60 * 1000);
-}
+};
 
 module.exports.handleMessage = async (message) => {
-    if (message.author.bot || message.channel.type !== 1) return; // Only DMs
-
+    if (message.author.bot || message.channel.type !== 1) return; // only handle direct messages
     const userId = message.author.id;
     const state = userStates.get(userId);
+
     if (!state) return;
 
     const step = state.step;
     const key = questions[step].key;
+
+    console.log(`Received from ${message.author.tag}: ${message.content}`);
+    console.log(`Current step: ${step}, expecting: ${key}`);
 
     if (key === 'screenshots') {
         if (message.attachments.size === 0) {
@@ -105,22 +104,32 @@ module.exports.handleMessage = async (message) => {
         }
         state.answers[key] = message.attachments.map(a => a.url);
     } else {
-        state.answers[key] = message.content;
+        if (!message.content || message.content.trim().length === 0) {
+            await message.reply('Please provide a valid response.');
+            return;
+        }
+        state.answers[key] = message.content.trim();
     }
 
-    if (state.lastMessage?.deletable) {
-        state.lastMessage.delete().catch(() => {});
-    }
+    const prevMsg = message;
     setTimeout(() => {
-        if (message.deletable) message.delete().catch(() => {});
+        if (prevMsg.deletable) prevMsg.delete().catch(() => {});
     }, 5 * 60 * 1000);
 
     state.step++;
 
     if (state.step < questions.length) {
-        await sendQuestion(message.author.dmChannel, userId);
+        const nextQuestion = questions[state.step].question;
+        const msg = await message.author.send(nextQuestion);
+        setTimeout(() => {
+            if (msg.deletable) msg.delete().catch(() => {});
+        }, 5 * 60 * 1000);
     } else {
-        const fields = Object.entries(state.answers).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n');
+        userStates.delete(userId);
+
+        const fields = Object.entries(state.answers)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join('\n');
 
         const embed = new EmbedBuilder()
             .setTitle('📝 New Migration Application')
@@ -139,8 +148,6 @@ module.exports.handleMessage = async (message) => {
         fs.appendFile(logFilePath, logLine, err => {
             if (err) console.error('Failed to write log:', err);
         });
-
-        userStates.delete(userId);
 
         await message.author.send('✅ Your application has been submitted. Thank you!');
     }
