@@ -66,7 +66,7 @@ module.exports.handleInteraction = async (interaction) => {
             .setPlaceholder('e.g., 1B')
             .setRequired(true);
             
-        const playerIdDeadsInput = new TextInputBuilder()
+        const playerDeadsInput = new TextInputBuilder()
             .setCustomId('playerDeads')
             .setLabel('Your Dead Troops')
             .setStyle(TextInputStyle.Short)
@@ -76,7 +76,7 @@ module.exports.handleInteraction = async (interaction) => {
         modal.addComponents(
             new ActionRowBuilder().addComponents(playerIdInput),
             new ActionRowBuilder().addComponents(kpInput),
-            new ActionRowBuilder().addComponents(kpInput)
+            new ActionRowBuilder().addComponents(playerDeadsInput)
         );
 
         await interaction.showModal(modal);
@@ -84,7 +84,7 @@ module.exports.handleInteraction = async (interaction) => {
     else if (interaction.isModalSubmit() && interaction.customId === 'apply_formModal') {
         const playerId = interaction.fields.getTextInputValue('playerId');
         const kp = interaction.fields.getTextInputValue('kp');
-        const kp = interaction.fields.getTextInputValue('kp');
+        const kp = interaction.fields.getTextInputValue('playerDeadsInput');
 
         // Тут можна додати додаткову логіку (наприклад, пересилання заявки в адмін-канал)
         await interaction.reply({ content: '✅ Your application has been submitted!', ephemeral: true });
