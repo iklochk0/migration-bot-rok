@@ -54,7 +54,7 @@ module.exports.execute = async (interaction) => {
     const row = new ActionRowBuilder().addComponents(button);
 
     await interaction.reply({
-        content: 'Please click the button to begin your application. Make sure your DMs are open!',
+        content: 'Натисніть кнопку, щоб почати подачу заявки:',
         embeds: [embed],
         components: [row],
         ephemeral: true
@@ -65,12 +65,7 @@ module.exports.handleInteraction = async (interaction) => {
     if (!interaction.isButton() || interaction.customId !== 'apply_start') return;
 
     const userId = interaction.user.id;
-    const dm = await interaction.user.createDM().catch(() => null);
-
-    if (!dm) {
-        await interaction.reply({ content: '❌ Could not send DM. Please make sure your private messages are open.', ephemeral: true });
-        return;
-    }
+    const dm = await interaction.user.createDM();
 
     userStates.set(userId, { step: 0, answers: {} });
 
@@ -85,17 +80,16 @@ module.exports.handleInteraction = async (interaction) => {
 };
 
 module.exports.handleMessage = async (message) => {
-    if (message.author.bot || message.channel.type !== 1) return; // only handle direct messages
+    if (message.author.bot) return;
     const userId = message.author.id;
     const state = userStates.get(userId);
 
     if (!state) return;
 
     const step = state.step;
-    const key = questions[step].key;
+    const key = questions[step]?.key;
 
-    console.log(`Received from ${message.author.tag}: ${message.content}`);
-    console.log(`Current step: ${step}, expecting: ${key}`);
+    if (!key) return;
 
     if (key === 'screenshots') {
         if (message.attachments.size === 0) {
@@ -104,11 +98,7 @@ module.exports.handleMessage = async (message) => {
         }
         state.answers[key] = message.attachments.map(a => a.url);
     } else {
-        if (!message.content || message.content.trim().length === 0) {
-            await message.reply('Please provide a valid response.');
-            return;
-        }
-        state.answers[key] = message.content.trim();
+        state.answers[key] = message.content;
     }
 
     const prevMsg = message;
@@ -127,10 +117,7 @@ module.exports.handleMessage = async (message) => {
     } else {
         userStates.delete(userId);
 
-        const fields = Object.entries(state.answers)
-            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-            .join('\n');
-
+        const fields = Object.entries(state.answers).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n');
         const embed = new EmbedBuilder()
             .setTitle('📝 New Migration Application')
             .setDescription(fields)
@@ -151,4 +138,6 @@ module.exports.handleMessage = async (message) => {
 
         await message.author.send('✅ Your application has been submitted. Thank you!');
     }
+
+    console.log(`Received input from ${message.author.tag}: ${message.content}`);
 };
