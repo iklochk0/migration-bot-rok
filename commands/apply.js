@@ -18,24 +18,6 @@ const questions = [
     { key: 'screenshots', question: 'Прикріпіть скріншоти профіля та командирів (до 5 файлів):', isAttachment: true }
 ];
 
-module.exports.execute = async (interaction) => {
-    const requirementsEmbed = new EmbedBuilder()
-        .setTitle('📋 Migration Requirements')
-        .setDescription(
-            "**9-digit ID:**\n" +
-            "• 1B+ KP, 5M+ deaths\n" +
-            "• 2 full marches (4 cmdrs)\n" +
-            "• 1 gold set, 1 expertise\n" +
-            "• VIP 14+\n\n" +
-            "**8-digit ID:**\n" +
-            "• 2.2B+ KP, 10M+ deaths\n" +
-            "• 3 full marches (6 cmdrs)\n" +
-            "• 2 gold sets, 2 expertises\n" +
-            "• VIP 15+\n\n" +
-            "❗ False or incomplete info = auto reject."
-        )
-        .setColor(0x2ECC71);
-
 module.exports.data = new SlashCommandBuilder()
     .setName('apply')
     .setDescription('Submit migration application');
