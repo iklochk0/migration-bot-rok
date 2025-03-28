@@ -1,10 +1,9 @@
-const { 
-    SlashCommandBuilder, 
-    ActionRowBuilder, 
-    ButtonBuilder, 
-    ButtonStyle, 
-    EmbedBuilder, 
-    AttachmentBuilder 
+const {
+    SlashCommandBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    EmbedBuilder
 } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -54,7 +53,7 @@ module.exports.execute = async (interaction) => {
     const row = new ActionRowBuilder().addComponents(button);
 
     await interaction.reply({
-        content: 'Натисніть кнопку, щоб почати подачу заявки:',
+        content: 'Click the button to start your application:',
         embeds: [embed],
         components: [row],
         ephemeral: true
@@ -69,55 +68,52 @@ module.exports.handleInteraction = async (interaction) => {
 
     userStates.set(userId, { step: 0, answers: {} });
 
-    const message = await dm.send(
-        "Let's begin your migration application. Please answer the following questions.\n*This conversation will auto-delete in 5 minutes per step to keep things clean.*\n" +
+    const first = await dm.send(
+        "Let's begin your migration application. Please answer the following questions.\n" +
+        '*This conversation will auto-delete in 5 minutes per step to keep things clean.*\n' +
         questions[0].question
     );
 
     setTimeout(() => {
-        if (message.deletable) message.delete().catch(() => {});
+        if (first.deletable) first.delete().catch(() => {});
     }, 5 * 60 * 1000);
 };
 
 module.exports.handleMessage = async (message) => {
-    if (message.author.bot) return;
+    if (message.author.bot || message.channel.type !== 1) return; // Ensure it's a DM
+
     const userId = message.author.id;
     const state = userStates.get(userId);
-
     if (!state) return;
 
     const step = state.step;
-    const key = questions[step]?.key;
+    const currentKey = questions[step].key;
 
-    if (!key) return;
-
-    if (key === 'screenshots') {
+    if (currentKey === 'screenshots') {
         if (message.attachments.size === 0) {
             await message.reply('Please upload at least one screenshot.');
             return;
         }
-        state.answers[key] = message.attachments.map(a => a.url);
+        state.answers[currentKey] = message.attachments.map(a => a.url);
     } else {
-        state.answers[key] = message.content;
+        state.answers[currentKey] = message.content.trim();
     }
 
-    const prevMsg = message;
-    setTimeout(() => {
-        if (prevMsg.deletable) prevMsg.delete().catch(() => {});
-    }, 5 * 60 * 1000);
+    const deleteAfter = (msg) => setTimeout(() => msg.deletable && msg.delete().catch(() => {}), 5 * 60 * 1000);
+    deleteAfter(message);
 
     state.step++;
 
     if (state.step < questions.length) {
-        const nextQuestion = questions[state.step].question;
-        const msg = await message.author.send(nextQuestion);
-        setTimeout(() => {
-            if (msg.deletable) msg.delete().catch(() => {});
-        }, 5 * 60 * 1000);
+        const next = await message.author.send(questions[state.step].question);
+        deleteAfter(next);
     } else {
         userStates.delete(userId);
 
-        const fields = Object.entries(state.answers).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n');
+        const fields = Object.entries(state.answers)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join('\n');
+
         const embed = new EmbedBuilder()
             .setTitle('📝 New Migration Application')
             .setDescription(fields)
@@ -126,18 +122,14 @@ module.exports.handleMessage = async (message) => {
 
         if (adminChannelId) {
             const adminChannel = await message.client.channels.fetch(adminChannelId).catch(() => null);
-            if (adminChannel && adminChannel.isTextBased()) {
+            if (adminChannel?.isTextBased()) {
                 await adminChannel.send({ embeds: [embed] });
             }
         }
 
-        const logLine = `[${new Date().toISOString()}] ${message.author.tag} (${userId}):\n${fields}\n\n`;
-        fs.appendFile(logFilePath, logLine, err => {
-            if (err) console.error('Failed to write log:', err);
-        });
+        const logEntry = `[${new Date().toISOString()}] ${message.author.tag} (${userId}):\n${fields}\n\n`;
+        fs.appendFile(logFilePath, logEntry, err => err && console.error('Log write error:', err));
 
         await message.author.send('✅ Your application has been submitted. Thank you!');
     }
-
-    console.log(`Received input from ${message.author.tag}: ${message.content}`);
 };
