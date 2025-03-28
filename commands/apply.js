@@ -5,6 +5,8 @@ const {
     ButtonStyle,
     EmbedBuilder
 } = require('discord.js');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const userApplications = new Map();
 
@@ -17,6 +19,15 @@ const questions = [
     { key: 'vip', question: 'Your VIP Level:' },
     { key: 'commanders', question: 'Number of commanders with full or playable expertise (e.g., 5515 Jeanne Prime, 5551 Hermann Prime):' }
 ];
+
+const logPath = path.join(__dirname, '../logs');
+if (!fs.existsSync(logPath)) fs.mkdirSync(logPath);
+
+function logApplication(username, answers) {
+    const logEntry = `User: ${username}\n` + questions.map(q => `${q.key}: ${answers[q.key]}`).join('\n') + `\nTime: ${new Date().toISOString()}\n\n`;
+    const logFile = path.join(logPath, 'applications.log');
+    fs.appendFileSync(logFile, logEntry);
+}
 
 module.exports.data = new SlashCommandBuilder()
     .setName('apply')
@@ -76,7 +87,7 @@ module.exports.handleMessage = async (message) => {
         if (!application) return;
 
         const currentQuestion = questions[application.step];
-        application.answers[currentQuestion.key] = message.content;
+        application.answers[currentQuestion.key] = message.content.trim();
         application.step++;
 
         setTimeout(() => message.delete().catch(() => {}), 300000);
@@ -104,8 +115,9 @@ module.exports.handleMessage = async (message) => {
             });
 
             await adminChannel.send({ embeds: [embed] });
+            logApplication(message.author.tag, application.answers);
 
-            const confirm = await message.channel.send('✅ Your application has been successfully submitted. This message will remain.');
+            await message.channel.send('✅ Your application has been successfully submitted. This message will remain.');
             userApplications.delete(message.author.id);
         }
     } catch (err) {
