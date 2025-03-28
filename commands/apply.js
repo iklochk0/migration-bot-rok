@@ -54,20 +54,28 @@ module.exports.handleInteraction = async (interaction) => {
 
         const playerIdInput = new TextInputBuilder()
             .setCustomId('playerId')
-            .setLabel('Your Player ID (8 or 9 digits)')
+            .setLabel('Your Player ID')
             .setStyle(TextInputStyle.Short)
             .setPlaceholder('e.g., 123456789')
             .setRequired(true);
-
+            
         const kpInput = new TextInputBuilder()
             .setCustomId('kp')
             .setLabel('Your Kill Points (KP)')
             .setStyle(TextInputStyle.Short)
             .setPlaceholder('e.g., 1B')
             .setRequired(true);
+            
+        const playerIdDeadsInput = new TextInputBuilder()
+            .setCustomId('playerDeads')
+            .setLabel('Your Dead Troops')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('e.g., 10m')
+            .setRequired(true);
 
         modal.addComponents(
             new ActionRowBuilder().addComponents(playerIdInput),
+            new ActionRowBuilder().addComponents(kpInput),
             new ActionRowBuilder().addComponents(kpInput)
         );
 
@@ -75,6 +83,7 @@ module.exports.handleInteraction = async (interaction) => {
     }
     else if (interaction.isModalSubmit() && interaction.customId === 'apply_formModal') {
         const playerId = interaction.fields.getTextInputValue('playerId');
+        const kp = interaction.fields.getTextInputValue('kp');
         const kp = interaction.fields.getTextInputValue('kp');
 
         // Тут можна додати додаткову логіку (наприклад, пересилання заявки в адмін-канал)
