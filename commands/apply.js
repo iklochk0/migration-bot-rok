@@ -1,5 +1,5 @@
-const fs = require('node:fs');
-const path = require('node:path');
+const fs = require('fs');
+const path = require('path');
 const { Client, Collection, Events, GatewayIntentBits, Partials } = require('discord.js');
 require('dotenv').config();
 
@@ -8,9 +8,9 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages
+        GatewayIntentBits.DirectMessages,
     ],
-    partials: [Partials.Channel]
+    partials: [Partials.Channel] // Важливо для роботи з DM
 });
 
 client.commands = new Collection();
