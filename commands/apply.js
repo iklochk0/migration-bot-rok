@@ -13,10 +13,10 @@ const adminChannelId = process.env.ADMIN_CHANNEL_ID;
 const logFilePath = path.join(__dirname, '../logs/applications.log');
 
 const questions = [
-    { key: 'accountScreenshot', question: 'Upload a screenshot of your account (showing Player ID and Kill Points):' },
-    { key: 'vipScreenshot', question: 'Upload a screenshot of your VIP level:' },
-    { key: 'marchesCommandersScreenshot', question: 'Upload a screenshot showing your full marches and combat-ready commanders (with proper skills):' },
-    { key: 'equipmentScreenshot', question: 'Upload screenshots of your full gold equipment sets and armaments:' },
+    { key: 'Account Screenshots', question: 'Upload a screenshot of your account (showing Player ID and Kill Points):' },
+    { key: 'VIP Screenshot', question: 'Upload a screenshot of your VIP level:' },
+    { key: 'Commanders Screenshots', question: 'Upload a screenshot showing your full marches and combat-ready commanders (with proper skills):' },
+    { key: 'Equipment Screenshots', question: 'Upload screenshots of your equipment and armaments:' },
 ];
 
 module.exports.data = new SlashCommandBuilder()
@@ -49,7 +49,7 @@ module.exports.execute = async (interaction) => {
     const row = new ActionRowBuilder().addComponents(button);
 
     await interaction.reply({
-        content: 'Натисніть кнопку, щоб почати подачу заявки:',
+        content: 'Click the button to start applying:',
         embeds: [embed],
         components: [row],
         ephemeral: true
