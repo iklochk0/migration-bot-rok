@@ -3,7 +3,7 @@ const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 // Завантаження команд із папки commands
 client.commands = new Collection();
@@ -26,8 +26,6 @@ client.on(Events.InteractionCreate, async interaction => {
             if (!command) return;
             await command.execute(interaction);
         } else {
-            // Для взаємодій, наприклад, кнопок або модальних форм,
-            // припускаємо, що вони стосуються команди "apply"
             const command = client.commands.get('apply');
             if (command && command.handleInteraction) {
                 await command.handleInteraction(interaction);
@@ -40,6 +38,13 @@ client.on(Events.InteractionCreate, async interaction => {
         } else {
             await interaction.followUp({ content: '❌ Error processing interaction!', ephemeral: true });
         }
+    }
+});
+
+client.on(Events.MessageCreate, async message => {
+    const command = client.commands.get('apply');
+    if (command && command.handleMessage) {
+        await command.handleMessage(message);
     }
 });
 
