@@ -1,47 +1,30 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
-require("dotenv").config();
-const fs = require("fs");
-const path = require("path");
+const { REST, Routes } = require('discord.js');
+require('dotenv').config();
+const fs = require('node:fs');
+const path = require('node:path');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-
-client.commands = new Collection();
+const commands = [];
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
     const command = require(path.join(commandsPath, file));
-    client.commands.set(command.data.name, command);
+    if (command.data) {
+        commands.push(command.data.toJSON());
+    }
 }
 
-client.on('interactionCreate', async (interaction) => {
-    if (interaction.isChatInputCommand()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command) return;
+const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
-        try {
-            await command.execute(interaction);
-        } catch (error) {
-            console.error(error);
-            await interaction.reply({ content: '❌ Error executing command!', ephemeral: true });
-        }
-    } else {
-        const command = client.commands.get('apply');
-        if (command && command.handleInteraction) {
-            try {
-                await command.handleInteraction(interaction);
-            } catch (error) {
-                console.error(error);
-                if (!interaction.replied) {
-                    await interaction.reply({ content: '❌ Error handling interaction!', ephemeral: true });
-                }
-            }
-        }
+(async () => {
+    try {
+        console.log(`🟡 Deploying ${commands.length} commands...`);
+        const data = await rest.put(
+            Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+            { body: commands }
+        );
+        console.log(`✅ Successfully deployed ${data.length} commands!`);
+    } catch (error) {
+        console.error('🔴 Error deploying commands:', error);
     }
-});
-
-client.once('ready', () => {
-    console.log(`✅ Logged in as ${client.user.tag}`);
-});
-
-client.login(process.env.TOKEN);
+})();

@@ -1,47 +1,83 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
-require("dotenv").config();
-const fs = require("fs");
-const path = require("path");
+const { 
+    SlashCommandBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    ModalBuilder, 
+    TextInputBuilder, 
+    TextInputStyle, 
+    EmbedBuilder 
+} = require('discord.js');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+module.exports.data = new SlashCommandBuilder()
+    .setName('apply')
+    .setDescription('Submit migration application');
 
-client.commands = new Collection();
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+module.exports.execute = async (interaction) => {
+    const requirementsEmbed = new EmbedBuilder()
+        .setTitle('📋 Migration Requirements')
+        .setDescription(
+            "**9-digit ID:**\n" +
+            "• 1B+ KP, 5M+ deaths\n" +
+            "• 2 full marches (4 cmdrs)\n" +
+            "• 1 gold set, 1 expertise\n" +
+            "• VIP 14+\n\n" +
+            "**8-digit ID:**\n" +
+            "• 2.2B+ KP, 10M+ deaths\n" +
+            "• 3 full marches (6 cmdrs)\n" +
+            "• 2 gold sets, 2 expertises\n" +
+            "• VIP 15+\n\n" +
+            "❗ False or incomplete info = auto reject."
+        )
+        .setColor(0x2ECC71);
 
-for (const file of commandFiles) {
-    const command = require(path.join(commandsPath, file));
-    client.commands.set(command.data.name, command);
-}
+    const openFormButton = new ButtonBuilder()
+        .setCustomId('apply_openForm')
+        .setLabel('📥 Apply')
+        .setStyle(ButtonStyle.Primary);
 
-client.on('interactionCreate', async (interaction) => {
-    if (interaction.isChatInputCommand()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command) return;
+    const row = new ActionRowBuilder().addComponents(openFormButton);
 
-        try {
-            await command.execute(interaction);
-        } catch (error) {
-            console.error(error);
-            await interaction.reply({ content: '❌ Error executing command!', ephemeral: true });
-        }
-    } else {
-        const command = client.commands.get('apply');
-        if (command && command.handleInteraction) {
-            try {
-                await command.handleInteraction(interaction);
-            } catch (error) {
-                console.error(error);
-                if (!interaction.replied) {
-                    await interaction.reply({ content: '❌ Error handling interaction!', ephemeral: true });
-                }
-            }
-        }
+    await interaction.reply({
+        content: 'Click the button below to start your migration application:',
+        embeds: [requirementsEmbed],
+        components: [row],
+        ephemeral: true
+    });
+};
+
+module.exports.handleInteraction = async (interaction) => {
+    if (interaction.isButton() && interaction.customId === 'apply_openForm') {
+        const modal = new ModalBuilder()
+            .setCustomId('apply_formModal')
+            .setTitle('Migration Application');
+
+        const playerIdInput = new TextInputBuilder()
+            .setCustomId('playerId')
+            .setLabel('Your Player ID (8 or 9 digits)')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('e.g., 123456789')
+            .setRequired(true);
+
+        const kpInput = new TextInputBuilder()
+            .setCustomId('kp')
+            .setLabel('Your Kill Points (KP)')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('e.g., 1B')
+            .setRequired(true);
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(playerIdInput),
+            new ActionRowBuilder().addComponents(kpInput)
+        );
+
+        await interaction.showModal(modal);
     }
-});
+    else if (interaction.isModalSubmit() && interaction.customId === 'apply_formModal') {
+        const playerId = interaction.fields.getTextInputValue('playerId');
+        const kp = interaction.fields.getTextInputValue('kp');
 
-client.once('ready', () => {
-    console.log(`✅ Logged in as ${client.user.tag}`);
-});
-
-client.login(process.env.TOKEN);
+        // Тут можна додати додаткову логіку (наприклад, пересилання заявки в адмін-канал)
+        await interaction.reply({ content: '✅ Your application has been submitted!', ephemeral: true });
+    }
+};
