@@ -7,7 +7,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // Завантаження команд із папки commands
 client.commands = new Collection();
-const commandsPath = path.join('/commands');
+const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
