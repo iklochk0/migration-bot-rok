@@ -87,33 +87,44 @@ client.once(Events.ClientReady, async () => {
 
 // Обробка взаємодій (slash-команд)
 client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-    if (interaction.commandName === 'apply') {
-        const userId = interaction.user.id;
-        const embed = new EmbedBuilder()
-        .setTitle('📋 KVK3 Migration Requirements')
-        .setDescription(
-            '• 200k+ KP, 800k+ deaths\n' +
-            '• 1 full march\n' +
-            '• VIP 12+\n\n' +
-            '❗ False or incomplete info = auto reject.'
-        )
-        .setColor(0x2ECC71);
 
-        const button = new ButtonBuilder()
-            .setCustomId('apply_start')
-            .setLabel('📥 Apply')
-            .setStyle(ButtonStyle.Primary);
+    // Обробка натискання кнопки 'apply_start'
+        if (interaction.isButton() && interaction.customId === 'apply_start') {
+            // Встановлюємо прапорець, що кнопка натиснута
+            interaction.dmTriggered = true;
+            // "Перезапускаємо" цю ж взаємодію, щоб запустити DM-логіку (решту коду, що йде нижче)
+            client.emit(Events.InteractionCreate, interaction);
+            return;  // Завершуємо обробку цієї взаємодії, бо вона вже повторно запущена
+        }
+        // Якщо взаємодія – не чатова команда, повернутися
+        if (!interaction.isChatInputCommand() && !interaction.isButton()) return;
 
-        const row = new ActionRowBuilder().addComponents(button);
+        // Обробка slash-команди /apply (перше викликування)
+        if (interaction.isChatInputCommand() && interaction.commandName === 'apply' && !interaction.dmTriggered) {
+            const embed = new EmbedBuilder()
+                .setTitle('📋 KVK3 Migration Requirements')
+                .setDescription(
+                    '• 200k+ KP, 800k+ deaths\n' +
+                    '• 1 full march\n' +
+                    '• VIP 12+\n\n' +
+                    '❗ False or incomplete info = auto reject.'
+                )
+                .setColor(0x2ECC71);
+    
+            const button = new ButtonBuilder()
+                .setCustomId('apply_start')
+                .setLabel('📥 Apply')
+                .setStyle(ButtonStyle.Primary);
+    
+            const row = new ActionRowBuilder().addComponents(button);
+    
+            await interaction.reply({
+                content: 'Click the button to start applying:',
+                embeds: [embed],
+                components: [row],
+                ephemeral: true
+            });
 
-        await interaction.reply({
-            content: 'Click the button to start applying:',
-            embeds: [embed],
-            components: [row],
-            ephemeral: true
-        });
-        
         // Перевірка активної сесії для цього користувача
         if (activeSessions.has(userId)) {
             // Відповідаємо ephemeral, що сесія вже активна
@@ -317,6 +328,7 @@ client.on(Events.InteractionCreate, async interaction => {
             // При будь-якому результаті завершуємо сесію
             activeSessions.delete(userId);
         }
+        return;
     }
 });
 
