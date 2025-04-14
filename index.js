@@ -1,4 +1,14 @@
-const { Client, GatewayIntentBits, Partials, Events, EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { 
+    Client, 
+    GatewayIntentBits, 
+    Partials, 
+    Events, 
+    EmbedBuilder, 
+    AttachmentBuilder, 
+    ButtonBuilder,
+    ActionRowBuilder,
+    ButtonStyle
+} = require('discord.js');
 
 require('dotenv').config();
 
