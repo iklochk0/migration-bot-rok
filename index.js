@@ -90,6 +90,30 @@ client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isChatInputCommand()) return;
     if (interaction.commandName === 'apply') {
         const userId = interaction.user.id;
+        const embed = new EmbedBuilder()
+        .setTitle('📋 KVK3 Migration Requirements')
+        .setDescription(
+            '• 200k+ KP, 800k+ deaths\n' +
+            '• 1 full march\n' +
+            '• VIP 12+\n\n' +
+            '❗ False or incomplete info = auto reject.'
+        )
+        .setColor(0x2ECC71);
+
+        const button = new ButtonBuilder()
+            .setCustomId('apply_start')
+            .setLabel('📥 Apply')
+            .setStyle(ButtonStyle.Primary);
+
+        const row = new ActionRowBuilder().addComponents(button);
+
+        await interaction.reply({
+            content: 'Click the button to start applying:',
+            embeds: [embed],
+            components: [row],
+            ephemeral: true
+        });
+        
         // Перевірка активної сесії для цього користувача
         if (activeSessions.has(userId)) {
             // Відповідаємо ephemeral, що сесія вже активна
@@ -188,7 +212,7 @@ client.on(Events.InteractionCreate, async interaction => {
                     }
                 }
             }
-            
+
             // Послідовно ставимо кожне питання і збираємо відповіді
             const answers = {};  // для збереження відповідей
             // 1. Профіль (скрін)
@@ -214,7 +238,7 @@ client.on(Events.InteractionCreate, async interaction => {
             answers.age = response.content.trim();
             // 6. Last KVK (скрін)
             response = await askQuestion(localeTexts[lang].lastKVK, true);
-            if (!response) { throw { code: 101, message: "User did not respond to Last KVK result screenshot." }; }
+            if (!response) { throw { code: 101, message: "User did not respond to last KVK result screenshot." }; }
             answers.lastKVKresluts = response.attachments.first();
 
 
@@ -239,13 +263,14 @@ client.on(Events.InteractionCreate, async interaction => {
                 embed.addFields({ name: fieldName, value: `📎 ${fileName}`, inline: false });
             }
             // Поля для скріншотів
-            // addImageField("Профіль", answers.profileScreenshot);
-            // addImageField("Commander Screenshot", answers.commanderScreenshot);
-            // addImageField("Equipment Screenshot", answers.equipmentScreenshot);
-            // addImageField("VIP Screenshot", answers.vipScreenshot);
+            addImageField("Профіль", answers.profileScreenshot);
+            addImageField("Командири", answers.commanderScreenshot);
+            addImageField("Спордження", answers.equipmentScreenshot);
+            addImageField("ВІП", answers.vipScreenshot);
+            addImageField("Cтатистика минклого KVK", answers.lastKVKresluts);
             // Поля для текстових відповідей
             embed.addFields(
-                { name: "Вік аккаунту", value: answers.place || "N/A", inline: true },
+                { name: "Вік аккаунту", value: answers.age || "N/A", inline: true },
             );
             // Інформація про користувача
             embed.addFields({ name: "User ID", value: interaction.user.id, inline: false });
