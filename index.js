@@ -28,28 +28,28 @@ const activeSessions = new Set();
 
 // Колекція текстів двома мовами для зручності (ua = українська, en = English)
 const localeTexts = {
-    // ua: {
-    //     startDm: "Привіт! Для подання заявки MGE, будь ласка, дайте відповіді на кілька запитань. Прошу НЕ обрізати скріншоти",
-    //     askProfile: "1️⃣ Надішліть скріншот вашого профілю.",
-    //     askAge: "5️⃣ Який вік вашого акканту?",
-    //     lastKVK: "6️⃣ Надішліть скріншот статистики вашого минулого КВК.",
-    //     askCommanders: "4️⃣ Надішліть скріншот ваших командирів.",
-    //     askEquipment: "2️⃣ Надішліть скріншот вашого спорядження.",
-    //     askVIP: "3️⃣ Який у вас VIP-рівень? Надішліть, будь ласка, скріншот VIP.",
-    //     invalidImage: "❗ Будь ласка, надішліть **зображення** (скріншот) для цього питання.",
-    //     invalidText: "❗ Будь ласка, надішліть відповідь текстом (це питання не потребує зображення).",
-    //     timeoutMsg: "⚠️ Час на відповіді вичерпано. Сесію завершено. Якщо хочете спробувати знову – використайте команду /apply заново.",
-    //     sessionActive: "Ви вже запустили заповнення анкети. Завершіть поточну або зачекайте 5 хвилин, щоб почати нову.",
-    //     dmError: "Не вдалося надіслати вам приватне повідомлення. Можливо, у вас вимкнені DM з цього серверу.",
-    //     thankYou: "✅ Дякуємо, вашу заявку отримано! Її відправлено адміністраторам."
-    // },
+    ua: {
+        startDm: "Привіт! Для подання заявки MGE, будь ласка, дайте відповіді на кілька запитань. Прошу НЕ обрізати скріншоти",
+        askProfile: "1️⃣ Надішліть скріншот вашого профілю.",
+        askEquipment: "2️⃣ Надішліть скріншот вашого спорядження.",
+        askCommanders: "3️⃣ Надішліть скріншот ваших командирів.",
+        askVIP: "4️⃣ Який у вас VIP-рівень? Надішліть, будь ласка, скріншот VIP.",
+        askAge: "5️⃣ Який вік вашого акканту?",
+        lastKVK: "6️⃣ Надішліть скріншот статистики вашого минулого КВК.",
+        invalidImage: "❗ Будь ласка, надішліть **зображення** (скріншот) для цього питання.",
+        invalidText: "❗ Будь ласка, надішліть відповідь текстом (це питання не потребує зображення).",
+        timeoutMsg: "⚠️ Час на відповіді вичерпано. Сесію завершено. Якщо хочете спробувати знову – використайте команду /apply заново.",
+        sessionActive: "Ви вже запустили заповнення анкети. Завершіть поточну або зачекайте 5 хвилин, щоб почати нову.",
+        dmError: "Не вдалося надіслати вам приватне повідомлення. Можливо, у вас вимкнені DM з цього серверу.",
+        thankYou: "✅ Дякуємо, вашу заявку отримано! Її відправлено адміністраторам."
+    },
     en: {
         startDm: "Hello! To apply for the MGE event, please answer a few questions. Please DON'T crop the screenshots.",
         askProfile: "1️⃣ Please send a screenshot of your game profile.",
-        askEquipment: "2️⃣ Please send a screenshot of your equipment.",
-        askVIP: "3️⃣ What is your VIP level? Please send a screenshot of your VIP screen.",
-        askCommanders: "4️⃣ Please send a screenshot of your commanders.",
         askAge: "5️⃣ How old is your account?",
+        askEquipment: "2️⃣ Please send a screenshot of your equipment.",
+        askCommanders: "4️⃣ Please send a screenshot of your commanders.",
+        askVIP: "3️⃣ What is your VIP level? Please send a screenshot of your VIP screen.",
         lastKVK: "6️⃣ Please send a screenshot of your last KvK statistics.",
         invalidImage: "❗ Please send an **image** (screenshot) for this question.",
         invalidText: "❗ Please answer with text (no image is needed for this question).",
@@ -188,7 +188,7 @@ client.on(Events.InteractionCreate, async interaction => {
                     }
                 }
             }
-
+            
             // Послідовно ставимо кожне питання і збираємо відповіді
             const answers = {};  // для збереження відповідей
             // 1. Профіль (скрін)
