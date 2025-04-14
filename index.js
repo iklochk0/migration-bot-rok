@@ -200,7 +200,7 @@ client.on(Events.InteractionCreate, async interaction => {
             if (!response) { throw { code: 101, message: "User did not respond to equipment screenshot." }; }
             answers.equipmentScreenshot = response.attachments.first();
             // 3. Командир (скрін)
-            response = await askQuestion(localeTexts[lang].askCommander, true);
+            response = await askQuestion(localeTexts[lang].askCommanders, true);
             if (!response) { throw { code: 101, message: "User did not respond to commander screenshot." }; }
             answers.commanderScreenshot = response.attachments.first();
             // 4. VIP (скрін)
