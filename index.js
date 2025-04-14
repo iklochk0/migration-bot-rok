@@ -39,7 +39,7 @@ const activeSessions = new Set();
 // Тексти для двох мов: українська (ua) та англійська (en)
 const localeTexts = {
     ua: {
-        startDm: "Привіт! Для подання заявки MGE, будь ласка, дайте відповіді на кілька запитань. Прошу НЕ обрізати скріншоти",
+        startDm: "Привіт! Для подання заявки на міграцію, будь ласка, дайте відповіді на кілька запитань. Прошу НЕ обрізати скріншоти",
         askProfile: "1️⃣ Надішліть скріншот вашого профілю.",
         askEquipment: "2️⃣ Надішліть скріншот вашого спорядження.",
         askCommanders: "3️⃣ Надішліть скріншот ваших командирів.",
@@ -54,7 +54,7 @@ const localeTexts = {
         thankYou: "✅ Дякуємо, вашу заявку отримано! Її відправлено адміністраторам!"
     },
     en: {
-        startDm: "Hello! To apply for the MGE event, please answer a few questions. Please DON'T crop the screenshots.",
+        startDm: "Hello! To apply for migration, please answer a few questions. Please DON'T crop the screenshots.",
         askProfile: "1️⃣ Please send a screenshot of your game profile.",
         askAge: "5️⃣ How old is your account?",
         askEquipment: "2️⃣ Please send a screenshot of your equipment.",
@@ -66,7 +66,7 @@ const localeTexts = {
         timeoutMsg: "⚠️ Time is up. Session ended due to inactivity. Please run /apply again if you want to try again.",
         sessionActive: "You already have an application in progress. Please finish it or wait 5 minutes before starting a new one.",
         dmError: "I couldn't send you a DM. Please check your privacy settings and try again.",
-        thankYou: "✅ Thank you, your application has been received and sent to the admins!"
+        thankYou: "✅ Thank you, your application has been received and sent to the Admins!"
     }
 };
 
@@ -236,7 +236,7 @@ async function handleMigrationDM(interaction) {
 
         // Формуємо результатний Embed для адміністратора
         const resultEmbed = new EmbedBuilder()
-            .setTitle(lang === 'ua' ? "📨 Нова заявка MGE" : "📨 New Migration Application")
+            .setTitle("📨 Нова міграційна заява")
             .setColor(0x2ECC71);
 
         const filesToAttach = [];
