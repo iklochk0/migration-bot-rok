@@ -39,7 +39,7 @@ const activeSessions = new Set();
 // Тексти для двох мов: українська (ua) та англійська (en)
 const localeTexts = {
     ua: {
-        startDm: "Привіт! Для подання заявки на міграцію, будь ласка, дайте відповіді на кілька запитань. Прошу НЕ обрізати скріншоти",
+        startDm: "Привіт! Для подання заявки на міграцію до нашого королівства, будь ласка, дайте відповіді на кілька запитань. Прошу НЕ обрізати скріншоти.\n⚠️ Наразі ми приймаємо лише акаунти для КВК3. Міграція для акаунтів з SoC (Сезону Завоювань) закрита.",
         askProfile: "1️⃣ Надішліть скріншот вашого профілю.",
         askEquipment: "2️⃣ Надішліть скріншот вашого спорядження.",
         askCommanders: "3️⃣ Надішліть скріншот ваших командирів.",
@@ -54,7 +54,7 @@ const localeTexts = {
         thankYou: "✅ Дякуємо, вашу заявку отримано! Її відправлено адміністраторам!"
     },
     en: {
-        startDm: "Hello! To apply for migration, please answer a few questions. Please DON'T crop the screenshots.",
+        startDm: "Hello! To apply for migration, please answer a few questions. Please DON'T crop the screenshots. \n⚠️ We are currently accepting only KVK3 accounts. Migration for SoC (Season of Conquest) accounts is closed.",
         askProfile: "1️⃣ Please send a screenshot of your game profile.",
         askAge: "5️⃣ How old is your account?",
         askEquipment: "2️⃣ Please send a screenshot of your equipment.",
@@ -110,7 +110,9 @@ client.on(Events.InteractionCreate, async interaction => {
                 '• 200k+ KP, 800k+ deaths\n' +
                 '• 1 full march\n' +
                 '• VIP 12+\n\n' +
-                '❗ False or incomplete info = auto reject.'
+                '❗ False or incomplete info = auto reject.\n\n' +
+                '⚠️ We are currently accepting only KVK3 accounts.\n’ +
+                 'Migration for SoC (Season of Conquest) accounts is closed.'
             )
             .setColor(0x2ECC71);
 
