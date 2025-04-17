@@ -110,9 +110,9 @@ client.on(Events.InteractionCreate, async interaction => {
                 '• 200k+ KP, 800k+ deaths\n' +
                 '• 1 full march\n' +
                 '• VIP 12+\n\n' +
-                '❗ False or incomplete info = auto reject.\n\n' +
-                '⚠️ We are currently accepting only KVK3 accounts.\n’ +
-                 'Migration for SoC (Season of Conquest) accounts is closed.'
+                '❗ False or incomplete info = auto reject.\n' +
+                '⚠️ We are currently accepting only KVK3 accounts.\n' +
+                'Migration for SoC (Season of Conquest) accounts is currently closed.'
             )
             .setColor(0x2ECC71);
 
