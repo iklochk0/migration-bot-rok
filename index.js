@@ -251,7 +251,7 @@ async function handleMigrationDM(interaction) {
 
         addImageField("Профіль", answers.profileScreenshot);
         addImageField("Командири", answers.commanderScreenshot);
-        addImageField("Спорудження", answers.equipmentScreenshot);
+        addImageField("Спорядження", answers.equipmentScreenshot);
         addImageField("VIP", answers.vipScreenshot);
         addImageField("Статистика мин. KvK", answers.lastKVKresluts);
         resultEmbed.addFields({ name: "Вік аккаунту", value: answers.age || "N/A", inline: true });
