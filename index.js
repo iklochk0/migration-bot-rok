@@ -104,6 +104,17 @@ client.on(Events.InteractionCreate, async interaction => {
 
     // Обробка slash-команди /apply (перший виклик) — відправляємо Embed із кнопкою
     if (interaction.isChatInputCommand() && interaction.commandName === 'apply') {
+        const allowedChannelId = '123456789012345678'; // <-- Тут встав правильний ID каналу для заявки на міграцію
+    
+        if (interaction.channelId !== allowedChannelId) {
+            await interaction.reply({
+                content: `❌ This command can only be used in <#${allowedChannelId}> channel.`,
+                ephemeral: true
+            });
+            return;
+        }
+    
+        // Далі твоя логіка відправки ембеда і кнопки
         const embed = new EmbedBuilder()
             .setTitle('📋 KVK3 Migration Requirements')
             .setDescription(
@@ -115,14 +126,14 @@ client.on(Events.InteractionCreate, async interaction => {
                 'Migration for SoC (Season of Conquest) accounts is currently closed.'
             )
             .setColor(0x2ECC71);
-
+    
         const button = new ButtonBuilder()
             .setCustomId('apply_start')
             .setLabel('📥 Apply')
             .setStyle(ButtonStyle.Primary);
-
+    
         const row = new ActionRowBuilder().addComponents(button);
-
+    
         await interaction.reply({
             content: 'Click the button to start applying:',
             embeds: [embed],
