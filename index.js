@@ -104,7 +104,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
     // Обробка slash-команди /apply (перший виклик) — відправляємо Embed із кнопкою
     if (interaction.isChatInputCommand() && interaction.commandName === 'apply') {
-        const allowedChannelId = '123456789012345678'; // <-- Тут встав правильний ID каналу для заявки на міграцію
+        const allowedChannelId = '1354829265849286847';
     
         if (interaction.channelId !== allowedChannelId) {
             await interaction.reply({
