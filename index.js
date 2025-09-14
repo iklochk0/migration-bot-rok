@@ -54,7 +54,7 @@ const localeTexts = {
         thankYou: "✅ Дякуємо, вашу заявку отримано! Її відправлено адміністраторам!"
     },
     en: {
-        startDm: "Hello! To apply for migration, please answer a few questions. Please DON'T crop the screenshots. \n⚠️ We are currently accepting only KVK3 accounts. Migration for SoC (Season of Conquest) accounts is closed.",
+        startDm: "Hello! To apply for migration, please answer a few questions. Please DON'T crop the screenshots. ⚠️ \n",
         askProfile: "1️⃣ Please send a screenshot of your game profile.",
         askAge: "5️⃣ How old is your account?",
         askEquipment: "2️⃣ Please send a screenshot of your equipment.",
@@ -116,11 +116,11 @@ client.on(Events.InteractionCreate, async interaction => {
     
         // Далі твоя логіка відправки ембеда і кнопки
         const embed = new EmbedBuilder()
-            .setTitle('📋 KVK3 Migration Requirements')
+            .setTitle('📋 Migration Requirements')
             .setDescription(
-                '• 200k+ KP, 800k+ deaths\n' +
-                '• 1 full march\n' +
-                '• VIP 12+\n\n' +
+                '• 1b+ KP, 2m+ deaths\n' +
+                '• 2 full marches\n' +
+                '• VIP 14+\n\n' +
                 '❗ False or incomplete info = auto reject.\n' +
                 '⚠️ We are currently accepting only KVK3 accounts.\n' +
                 'Migration for SoC (Season of Conquest) accounts is currently closed.'
