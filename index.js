@@ -39,7 +39,7 @@ const activeSessions = new Set();
 // Тексти для двох мов: українська (ua) та англійська (en)
 const localeTexts = {
     ua: {
-        startDm: "Привіт! Для подання заявки на міграцію до нашого королівства, будь ласка, дайте відповіді на кілька запитань. Прошу НЕ обрізати скріншоти.\n⚠️ Наразі ми приймаємо лише акаунти для КВК3. Міграція для акаунтів з SoC (Сезону Завоювань) закрита.",
+        startDm: "Привіт! Для подання заявки на міграцію до нашого королівства, будь ласка, дайте відповіді на кілька запитань. Прошу НЕ обрізати скріншоти.\n⚠️",
         askProfile: "1️⃣ Надішліть скріншот вашого профілю.",
         askEquipment: "2️⃣ Надішліть скріншот вашого спорядження.",
         askCommanders: "3️⃣ Надішліть скріншот ваших командирів.",
@@ -172,9 +172,9 @@ async function handleMigrationDM(interaction) {
         const introMsg = await dmChannel.send(localeTexts[lang].startDm);
         setTimeout(() => { introMsg.delete().catch(() => {}); }, 300000);
 
-        // Хелпер для задавання питань з таймаутом і валідацією
-        async function askQuestion(questionText, expectImage) {
-            const questionMsg = await dmChannel.send(questionText);
+        // Хелпер для задавання питань з таймаутом і валідацією (з лімітом кількості зображень)
+        async function askQuestion(questionText, expectImage, maxCount = 1) {
+            const questionMsg = await dmChannel.send(`${questionText}\n(You can attach up to ${maxCount} image(s) in **one** message.)`);
             setTimeout(() => { questionMsg.delete().catch(() => {}); }, 300000);
 
             const collected = await dmChannel.awaitMessages({
@@ -192,84 +192,110 @@ async function handleMigrationDM(interaction) {
                     const warnMsg = await dmChannel.send(localeTexts[lang].invalidImage);
                     setTimeout(() => { warnMsg.delete().catch(() => {}); }, 300000);
                     try { await answerMsg.delete(); } catch (e) {}
-                    return await askQuestion(questionText, expectImage);
+                    return await askQuestion(questionText, expectImage, maxCount);
                 } else {
-                    const attachment = answerMsg.attachments.first();
-                    const isImage = attachment.contentType && attachment.contentType.startsWith('image');
-                    if (!isImage) {
+                    const attachmentsArray = [...answerMsg.attachments.values()];
+                    const allImages = attachmentsArray.every(att => att.contentType && att.contentType.startsWith('image'));
+                    if (!allImages) {
                         const warnMsg = await dmChannel.send(localeTexts[lang].invalidImage);
                         setTimeout(() => { warnMsg.delete().catch(() => {}); }, 300000);
                         try { await answerMsg.delete(); } catch (e) {}
-                        return await askQuestion(questionText, expectImage);
+                        return await askQuestion(questionText, expectImage, maxCount);
                     }
-                    return answerMsg;
+                    if (attachmentsArray.length > maxCount) {
+                        const warnMsg = await dmChannel.send(`❗ You attached **${attachmentsArray.length}** images, but the limit is **${maxCount}**. Please resend in **one** message with up to **${maxCount}** images.`);
+                        setTimeout(() => { warnMsg.delete().catch(() => {}); }, 300000);
+                        try { await answerMsg.delete(); } catch (e) {}
+                        return await askQuestion(questionText, expectImage, maxCount);
+                    }
+                    return attachmentsArray; // повертаємо масив вкладень
                 }
             } else {
                 if (answerMsg.attachments.size > 0) {
                     const warnMsg = await dmChannel.send(localeTexts[lang].invalidText);
                     setTimeout(() => { warnMsg.delete().catch(() => {}); }, 300000);
                     try { await answerMsg.delete(); } catch (e) {}
-                    return await askQuestion(questionText, expectImage);
+                    return await askQuestion(questionText, expectImage, maxCount);
                 } else {
                     return answerMsg;
                 }
             }
         }
 
+        // Ліміти кількості фото на кожне питання
+        const limits = {
+            profile: 2,
+            equipment: 10,
+            commanders: 2,
+            vip: 2,
+            lastKVK: 2
+        };
+
         const answers = {};
 
         // Збираємо відповіді
-        let response = await askQuestion(localeTexts[lang].askProfile, true);
+        let response = await askQuestion(localeTexts[lang].askProfile, true, limits.profile);
         if (!response) { throw { code: 101, message: "User did not respond to profile screenshot." }; }
-        answers.profileScreenshot = response.attachments.first();
+        answers.profileScreenshot = response;
 
-        response = await askQuestion(localeTexts[lang].askEquipment, true);
+        response = await askQuestion(localeTexts[lang].askEquipment, true, limits.equipment);
         if (!response) { throw { code: 101, message: "User did not respond to equipment screenshot." }; }
-        answers.equipmentScreenshot = response.attachments.first();
+        answers.equipmentScreenshot = response;
 
-        response = await askQuestion(localeTexts[lang].askCommanders, true);
+        response = await askQuestion(localeTexts[lang].askCommanders, true, limits.commanders);
         if (!response) { throw { code: 101, message: "User did not respond to commanders screenshot." }; }
-        answers.commanderScreenshot = response.attachments.first();
+        answers.commanderScreenshot = response;
 
-        response = await askQuestion(localeTexts[lang].askVIP, true);
+        response = await askQuestion(localeTexts[lang].askVIP, true, limits.vip);
         if (!response) { throw { code: 101, message: "User did not respond to VIP screenshot." }; }
-        answers.vipScreenshot = response.attachments.first();
+        answers.vipScreenshot = response;
 
         response = await askQuestion(localeTexts[lang].askAge, false);
         if (!response) { throw { code: 101, message: "User did not respond to account age." }; }
         answers.age = response.content.trim();
 
-        response = await askQuestion(localeTexts[lang].lastKVK, true);
+        response = await askQuestion(localeTexts[lang].lastKVK, true, limits.lastKVK);
         if (!response) { throw { code: 101, message: "User did not respond to last KvK screenshot." }; }
-        answers.lastKVKresluts = response.attachments.first();
+        answers.lastKVKresluts = response;
 
         logEvent("201", `Collected all answers from user ${userId}. Preparing embed...`);
 
-        // Формуємо результатний Embed для адміністратора
+        // Формуємо результатний Embed для адміністратора (коротка зведена інформація)
         const resultEmbed = new EmbedBuilder()
             .setTitle("📨 Нова міграційна заява")
-            .setColor(0x2ECC71);
-
-        const filesToAttach = [];
-
-        function addImageField(fieldName, attachment) {
-            let fileName = attachment.name || "screenshot.png";
-            filesToAttach.push(new AttachmentBuilder(attachment.url, { name: fileName }));
-            resultEmbed.addFields({ name: fieldName, value: `📎 ${fileName}`, inline: false });
-        }
-
-        addImageField("Профіль", answers.profileScreenshot);
-        addImageField("Командири", answers.commanderScreenshot);
-        addImageField("Спорядження", answers.equipmentScreenshot);
-        addImageField("VIP", answers.vipScreenshot);
-        addImageField("Статистика мин. KvK", answers.lastKVKresluts);
-        resultEmbed.addFields({ name: "Вік аккаунту", value: answers.age || "N/A", inline: true });
-        resultEmbed.addFields({ name: "User ID", value: interaction.user.id, inline: false });
-        resultEmbed.setFooter({ text: `User: ${interaction.user.tag}` });
+            .setColor(0x2ECC71)
+            .addFields(
+                { name: "Вік аккаунту", value: answers.age || "N/A", inline: true },
+                { name: "User", value: `${interaction.user.tag} (${interaction.user.id})`, inline: false }
+            );
 
         const adminChannel = await client.channels.fetch(ADMIN_CHANNEL_ID);
-        await adminChannel.send({ embeds: [resultEmbed], files: filesToAttach });
-        logEvent("202", `Sent application embed to admin channel for user ${userId}.`);
+        await adminChannel.send({ embeds: [resultEmbed] });
+
+        // Хелпери для відправки файлів шматками по 10 (ліміт Discord)
+        function toBuilders(arr) {
+            return arr.map((att, i) => new AttachmentBuilder(att.url, { name: att.name || `screenshot_${i + 1}.png` }));
+        }
+        function chunkArray(arr, size) {
+            const out = []; for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size)); return out;
+        }
+        async function sendSection(title, attachmentsArray) {
+            if (!attachmentsArray || attachmentsArray.length === 0) return;
+            const chunks = chunkArray(toBuilders(attachmentsArray), 10);
+            for (let idx = 0; idx < chunks.length; idx++) {
+                const header = chunks.length > 1 ? `${title} (part ${idx + 1}/${chunks.length})` : title;
+                await adminChannel.send({ content: `**${header}**`, files: chunks[idx] });
+            }
+        }
+
+        // Відправляємо кожен розділ окремими повідомленнями, підтримка до 10 фото для спорядження
+        await sendSection("📎 Профіль", answers.profileScreenshot);
+        await sendSection("📎 Командири", answers.commanderScreenshot);
+        await sendSection("📎 Спорядження", answers.equipmentScreenshot);
+        await sendSection("📎 VIP", answers.vipScreenshot);
+        await sendSection("📎 Статистика мин. KvK", answers.lastKVKresluts);
+
+        logEvent("202", `Sent application (embed + files) to admin channel for user ${userId}.`);
 
         const thanksMsg = await dmChannel.send(localeTexts[lang].thankYou);
         setTimeout(() => { thanksMsg.delete().catch(() => {}); }, 300000);
